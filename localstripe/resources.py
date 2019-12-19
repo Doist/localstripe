@@ -425,6 +425,23 @@ class Charge(StripeObject):
         return obj
 
     @classmethod
+    def _api_list_all(cls, url, customer=None, **kwargs):
+        if kwargs:
+            raise UserError(400, 'Unexpected ' + ', '.join(kwargs.keys()))
+        try:
+            if customer is not None:
+                assert type(customer) is str and customer.startswith('cus_')
+        except AssertionError:
+            raise UserError(400, 'Bad request')
+
+        li = super(Charge, cls)._api_list_all(url)
+
+        if customer is not None:
+            Customer._api_retrieve(customer)  # to return 404 if not existant
+            li._list = [c for c in li._list if c.customer == customer]
+        return li
+
+    @classmethod
     def _api_capture(cls, id, amount=None, **kwargs):
         if kwargs:
             raise UserError(400, 'Unexpected ' + ', '.join(kwargs.keys()))
